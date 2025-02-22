@@ -56,7 +56,7 @@ function mainMenu() {
                         name: 'name',
                         message: 'Enter department name:'
                     });
-                    const res = await client.query('INSERT INTO departments (name) VALUES ($1)', [name]);
+                    await client.query('INSERT INTO departments (name) VALUES ($1)', [name]);
                     console.log(`Department ${name} added successfully.`);
                 }
                 addDepartment();
@@ -174,7 +174,7 @@ function mainMenu() {
                     choices: roleName, 
                 });
 
-                const res = await client.query('INSERT INTO employees (role_id) VALUES ($1)',[role]);
+                const res = await client.query('UPDATE INTO employees (role_id) VALUES ($1)',[role]);
                 console.table(res.rows);
 
                 };
