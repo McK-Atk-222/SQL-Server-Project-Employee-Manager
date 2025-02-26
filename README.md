@@ -15,7 +15,7 @@ This termal application allows the management of a employee database including d
 npm i
 
 ## Usage
-node index.js
+node index.js <br />
 Demo Link: [Google Drive](https://drive.google.com/file/d/1WD4k5Y9R0JH5PdX3qijJ-3hg4x5COh4J/view)
 
 ## License
