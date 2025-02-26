@@ -25,7 +25,10 @@ function mainMenu() {
             case 'View all departments':
                 async function viewAllDepartments() {
                     const res = await client.query('SELECT * FROM departments');
+
                     console.table(res.rows);
+                    
+                    mainMenu();
                 }
                 viewAllDepartments();
 
@@ -33,8 +36,11 @@ function mainMenu() {
 
             case 'View all roles':
                 async function viewAllRoles() {
-                    const res = await client.query('SELECT * FROM roles');
+                    const res = await client.query('SELECT roles.title, roles.salary, departments.name from roles LEFT JOIN departments on roles.department_id = departments.id');
+
                     console.table(res.rows);
+
+                    mainMenu();
                 }
                 viewAllRoles();
 
@@ -42,8 +48,11 @@ function mainMenu() {
 
             case 'View all employees':
                 async function viewAllEmployees() {
-                    const res = await client.query('SELECT * FROM employees');
+                    const res = await client.query('SELECT employees.first_name, employees.last_name, roles.title, employees.manager_id, roles.salary FROM employees LEFT JOIN roles on employees.role_id = roles.id');
+
                     console.table(res.rows);
+
+                    mainMenu();
                 }
                 viewAllEmployees();
 
@@ -51,13 +60,17 @@ function mainMenu() {
 
             case 'Add a department':
                 async function addDepartment() {
-                    const name  = await inquirer.prompt({
+                    const { name }  = await inquirer.prompt({
                         type: 'input',
                         name: 'name',
                         message: 'Enter department name:'
                     });
+
                     await client.query('INSERT INTO departments (name) VALUES ($1)', [name]);
+
                     console.log(`Department ${name} added successfully.`);
+
+                    mainMenu();
                 }
                 addDepartment();
 
@@ -86,18 +99,27 @@ function mainMenu() {
                         return res.rows;
                     }
 
-                    const departmentName = viewAllDepartments()
+                    const departmentName = await viewAllDepartments()
 
-                    const { department } = await inquirer.prompt({
+                    const convertedArray = departmentName.map(dept => {
+                        return {
+                            value: dept.id,
+                            name: dept.name
+                        }
+                    })
+
+                    const { departmentId } = await inquirer.prompt({
                         type: 'list',
                         name: 'departmentId',
                         message: 'Which department is this role in?',
-                        choices: departmentName, 
+                        choices: convertedArray, 
                     });
                 
-                const res = await client.query('INSERT INTO roles (title, salary, department_id) VALUES ($1,$2,$3)',[title,salary,department]);
-                    console.table(res.rows);
+                    await client.query('INSERT INTO roles (title, salary, department_id) VALUES ($1,$2,$3)',[title,salary,departmentId]);
 
+                    console.log("Role has been added")
+
+                    mainMenu();
                 };
                 addRole(); 
 
@@ -122,63 +144,108 @@ function mainMenu() {
                         return res.rows;
                     }
 
-                    const roleName = viewAllroles()
+                    const roleName = await viewAllroles()
+
+                    const convertedArray = roleName.map(role => {
+                        return {
+                            value: role.id,
+                            name: role.title
+                        }
+                    })
 
                     const { role } = await inquirer.prompt({
                         type: 'list',
-                        name: 'roleId',
+                        name: 'role',
                         message: 'Which role is this employee in?',
-                        choices: roleName, 
+                        choices: convertedArray, 
                     });
 
-                    const { manager } = await inquirer.prompt({
-                        type: 'input',
+                    async function viewAllEmployees() {
+                        const res = await client.query('SELECT * FROM employees');
+                        return res.rows;
+                    }
+
+                    const employeeName = await viewAllEmployees()
+
+                    const employeeConvertedArray = employeeName.map(name => {
+                        return {
+                            value: name.id,
+                            name: `${name.first_name} ${name.last_name}`
+                        }
+                    })
+
+                    employeeConvertedArray.push({
+                        value: null,
+                        name: 'none'
+                    })
+                 
+                    const { manager } = await inquirer.prompt({ //DOESNT FUNCTION HERE
+                        type: 'list',
                         name: 'manager',
-                        message: 'Enter employees manager:'
+                        message: 'Select employees manager:',
+                        choices: employeeConvertedArray, 
                     });
                 
-                const res = await client.query('INSERT INTO employees (first_name, last_name, role_id, manager_id) VALUES ($1,$2,$3,$4)',[firstName,lastName,role,manager]);
-                    console.table(res.rows);
+                    await client.query('INSERT INTO employees (first_name, last_name, role_id, manager_id) VALUES ($1,$2,$3,$4)',[firstName,lastName,role,manager]);
 
+                    console.log('Employee has been Added')
+
+                    mainMenu();
                 };
                 addEmployee(); 
 
                 break;
 
-                case 'Update an employee':
+                case 'Update an employee role': //UNTESTED BUT MOST LIKELY NOT FUNCTIONING YET
                 async function updateEmployee() {
                     async function viewAllEmployees() {
                     const res = await client.query('SELECT * FROM employees');
                     return res.rows;
                 }
 
-                const employeeName = viewAllEmployees()
+                const employeeName = await viewAllEmployees()
 
-                const { department } = await inquirer.prompt({
+                const employeeConvertedArray = employeeName.map(name => {
+                    return {
+                        value: name.id,
+                        name: `${name.first_name} ${name.last_name}`
+                    }
+                })
+
+                const {employeeId} = await inquirer.prompt({
                     type: 'list',
                     name: 'employeeId',
                     message: 'Select an employee to update:',
-                    choices: employeeName, 
+                    choices: employeeConvertedArray, 
                 });
+
                 async function viewAllroles() {
                     const res = await client.query('SELECT * FROM roles');
                     return res.rows;
                 }
 
-                const roleName = viewAllroles()
+                const roleName = await viewAllroles()
 
-                const { role } = await inquirer.prompt({
+                const convertedArray = roleName.map(role => {
+                    return {
+                        value: role.id,
+                        name: role.title
+                    }
+                })
+
+                const { roleId } = await inquirer.prompt({
                     type: 'list',
                     name: 'roleId',
                     message: 'Select updated role:',
-                    choices: roleName, 
+                    choices: convertedArray, 
                 });
 
-                const res = await client.query('UPDATE INTO employees (role_id) VALUES ($1)',[role]);
-                console.table(res.rows);
+                await client.query('UPDATE employees SET role_id = $1 WHERE id = $2',[roleId,employeeId]);
 
+                console.log('Employee updated')
+                mainMenu();
                 };
-                updateEmployee(); 
+                updateEmployee();
 
                 break;
 
